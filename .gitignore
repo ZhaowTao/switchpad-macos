@@ -1,0 +1,9 @@
+build/
+*.o
+.DS_Store
+tools/probe/probe
+
+# Working notes and personal write-ups live outside this repository.
+notes/
+*_notes.md
+*笔记*.md
