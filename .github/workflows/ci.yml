@@ -15,5 +15,11 @@ jobs:
         run: make all
       - name: Unit tests
         run: make test
-      - name: CLI enumerates devices (empty is fine on a runner)
-        run: ./build/swr-haptic list
+      # A runner has no Nintendo pad. `list` deliberately exits 2 in that case;
+      # any other non-zero status is a real failure and must stay red.
+      - name: CLI runs and enumerates devices
+        run: |
+          rc=0
+          ./build/swr-haptic list || rc=$?
+          echo "swr-haptic list exit=$rc"
+          [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]
