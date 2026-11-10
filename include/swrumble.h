@@ -15,8 +15,9 @@
 // each other, so a single merged handle, driven by 0.5 s pulses with a 0.15 s lead. The result changes in strength but not
 // in texture. Writing the pad's own output report skips all three.
 //
-// What it is not. It does not open a device, read input, or know about a game. That is switch_hid.h's job, and a game's
-// own vibration values are its own.
+// What it is not. It does not open a device, read input, pace reports, or know about a game. Those are the caller's HID
+// layer's job, and getting the pacing wrong is enough to break a pad: see docs/pro-controller.md. A game's own vibration
+// values are its own.
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
@@ -71,7 +72,12 @@ void swr_encode(uint8_t out[4], const swr_value *v, float gain, float gamma, flo
 // An output report 0x01 body for a Pro Controller: report id, an incrementing counter (4 bits), left and right bytes,
 // then an optional subcommand. len is 49 over Bluetooth and 64 over USB; a frame carrying only rumble still goes out at
 // that length, because a short one is not what the pad's firmware answers. Returns the number of bytes written to out,
-// 0 if cap is too small. Pass subcmd 0 for a rumble-only frame.
+// 0 if cap is too small.
+//
+// Report 0x01 is "rumble and subcommand". Passing subcmd 0 gives a frame with an empty subcommand field: fine for a
+// one-off subcommand such as 0x48, and fine for the short, bounded bursts this repository's CLI plays. It is NOT the
+// right frame for a continuous rumble stream: 0x10 is "rumble only", carries an 8-byte body, and is what long-running
+// integrations use. See docs/pro-controller.md for a measured failure of the 0x01-at-high-rate approach.
 size_t swr_report_pro(uint8_t *out, size_t cap, uint8_t counter,
                       const uint8_t left[4], const uint8_t right[4],
                       uint8_t subcmd, const uint8_t *subdata, size_t sublen);
